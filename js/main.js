@@ -16,7 +16,7 @@ function toggleFields() { // Funzione per mostrare/nascondere i campi in base al
 async function login () { // Funzione per gestire il login
     const identifier = document.getElementById('identifier').value.trim(), // Recupera il codice fiscale inserito
             role = document.getElementById('role').value.trim(), // Recupera il ruolo selezionato
-            email = role === 'cliente' ? document.getElementById('email').value.trim() : ''; // Recupera l'email inserita solo se il ruolo è cliente
+            email = role === 'cliente' ? document.getElementById('email').value.trim() : '', // Recupera l'email inserita solo se il ruolo è cliente
             error_message = document.getElementById('error_message'); // Recupera l'elemento per il messaggio di errore
     error_message.style.display = 'none'; // Nasconde il messaggio di errore all'inizio
     try {
@@ -25,6 +25,7 @@ async function login () { // Funzione per gestire il login
             headers: {
                 'Content-Type': 'application/json'
             },
+            // credentials: 'include', // Includi le credenziali per la sessione
             body: JSON.stringify({ identifier: identifier, email: email, role: role }) // Invia il codice fiscale, l'email e il ruolo al server
         });
         const data = await response.json();

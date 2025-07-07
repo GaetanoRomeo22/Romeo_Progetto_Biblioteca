@@ -1,13 +1,29 @@
+const path = require('path'); // Per gestire i percorsi dei file
 require('dotenv').config({ path: 'database.env' }); // Varabili d'ambiente per connessione al database
 const express = require('express');
-const mysql = require('mysql2');
-const bodyParser = require('body-parser');
+const session = require('express-session'); // Per gestire le sessioni degli utenti
+const mysql = require('mysql2'); // Per interagire con il database MySQL
+const bodyParser = require('body-parser'); // Per analizzare il corpo delle richieste JSON
 const cors = require('cors');
 const app = express();
-const port = 3000; // Porta su cui il server ascolterà
+const backEndPort = 3000; // Porta su cui il server ascolterà
+const frontEndPort = 5500; // Porta del frontend, se necessario
 
+app.use(bodyParser.json()); // Middleware per analizzare il corpo delle richieste JSON
 app.use(cors());
-app.use(bodyParser.json());
+/*
+app.use(cors({ // Configurazione CORS per permettere richieste dal frontend
+  origin: `http://localhost:${frontEndPort}`, // o la porta del tuo frontend
+  credentials: true
+}));
+
+app.use(session({ // Configurazione della sessione
+    secret: 'Biblioteca', // Chiave segreta per firmare il cookie della sessione
+    resave: false, // Non salvare la sessione se non è stata modificata
+    saveUninitialized: false, // Non salvare le sessioni non inizializzate
+    cookie: { secure: false } // True per HTTPS, false per HTTP
+}));
+*/
 
 const db = mysql.createConnection({ // Configurazione della connessione al database
     host: process.env.DB_HOST,
@@ -44,6 +60,11 @@ app.post('/login', (req, res) => { // Funzione per gestire il login
             return res.status(500).json({ error: 'Errore del server' });
         }
         if (results.length > 0) { // Se la query ha restituito risultati, significa che le credenziali sono corrette
+            /*
+            req.session.loggedIn = true; // Imposta la sessione come loggata
+            req.session.role = role; // Salva il ruolo nella sessione
+            req.session.identifier = role === 'bibliotecario' ? results[0].NUMERO_MATRICOLA : results[0].CODICE_FISCALE_CLIENTE; // Salva il codice fiscale o la matricola nella session
+            */
             const redirect_page = role === 'bibliotecario' ? 'home_bibliotecario.html' : 'home_cliente.html';
             return res.status(200).json({ redirect: redirect_page });
         } else { // Se non ci sono risultati, le credenziali sono errate
@@ -52,6 +73,6 @@ app.post('/login', (req, res) => { // Funzione per gestire il login
     })
 });
 
-app.listen(port, () => { // Avvio del server sulla porta specificata
-  console.log(`Server in ascolto sulla porta ${port}`);
+app.listen(backEndPort, () => { // Avvio del server sulla porta specificata
+  console.log(`Server in ascolto sulla porta ${backEndPort}`);
 });
