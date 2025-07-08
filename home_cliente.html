@@ -14,20 +14,21 @@
                 <li><a href="#">Libri Disponibili</a></li>
                 <li><a href="#">I miei prestiti</a></li>
                 <li><a href="#">Storico</a></li>
-                <li><a href="#">Logout</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
             </ul>
         </nav>
     </header>
     <main class="main-content">
         <section class="welcome-box">
-        <h2>Ciao, Mario Rossi 👋</h2>
-        <p>Benvenuto nella tua area personale della biblioteca.</p>
+        <h2 id="user-info"></h2>
+        <p>Benvenuto nella tua area personale della biblioteca</p>
         </section>
     </main>
     <script src="js/main.js"></script>
     <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            checkAccess('cliente');
+        window.addEventListener('DOMContentLoaded', async () => {
+            await checkAccess('cliente'); // Verifica che l'utente abbia accesso alla pagina
+            await showUserInfo(); // Mostra le informazioni dell'utente
         });
     </script>
 </body>

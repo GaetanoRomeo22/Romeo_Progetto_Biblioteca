@@ -6,7 +6,7 @@ const mysql = require('mysql2'); // Per interagire con il database MySQL
 const cors = require('cors');
 const app = express();
 const backEndPort = 3000; // Porta su cui il server ascolterà
-const frontEndPort = 5500; // Porta del frontend, se necessario
+const frontEndPort = 5500; // Porta del frontend
 
 app.use(express.json()); // Middleware per analizzare il corpo delle richieste JSON
 
@@ -74,6 +74,38 @@ app.get('/check/logged', (req, res) => { // Route per verificare se l'utente è 
     } else { // Se l'utente non è loggato
         res.status(401).json({ loggedIn: false, role: null }); // Risponde con lo stato di login non riuscito
     }
+});
+
+app.get('/user/info', (req, res) => { // Route per ottenere le informazioni dell'utente
+    if (!req.session.loggedIn) { // Se l'utente non è loggato
+        return res.status(401).json({ error: 'Utente non loggato' }); // Risponde con un errore
+    }
+    const identifier = req.session.identifier, // Recupera il codice fiscale o la matricola dall'oggetto sessione
+          role = req.session.role; // Recupera il ruolo dell'utente dall'oggetto sessione
+    let query = '';
+    if (role === 'cliente') { // Se il ruolo è cliente
+        query = 'SELECT NOME_CLIENTE AS NOME FROM CLIENTE WHERE CODICE_FISCALE_CLIENTE = ?';
+    } else if (role === 'bibliotecario') { // Se il ruolo è bibliotecario
+        query = 'SELECT NOME_BIBLIOTECARIO AS NOME FROM BIBLIOTECARIO WHERE NUMERO_MATRICOLA = ?';
+    }
+    db.query(query, [identifier], (error, results) => { // Esegue la query per ottenere il nome dell'utente
+        if (error || results.length === 0) { // Gestione degli errori durante la query o se non ci sono risultati
+            return res.status(500).json({ error: 'Errore nel recupero del nome utente' });
+        }
+        const name = results[0].NOME; // Recupera il nome dell'utente
+        res.status(200).json({ name: name }); // Risponde con il nome dell'utente
+    })
+});
+
+app.post('/logout', (req, res) => { // Route per gestire il logout
+    req.session.destroy(err => { // Distrugge la sessione dell'utente
+        if (err) {
+            console.error('Errore durante il logout:', err);
+            return res.status(500).json({ error: 'Errore durante il logout' });
+        }
+        res.clearCookie('connect.sid'); // Pulisce il cookie della sessione
+        res.sendStatus(200); // Risponde con lo stato OK dopo il logout
+    });
 });
 
 app.listen(backEndPort, () => { // Avvio del server sulla porta specificata

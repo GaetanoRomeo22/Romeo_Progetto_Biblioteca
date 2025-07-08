@@ -21,7 +21,7 @@ async function login () { // Funzione per gestire il login
     error_message.style.display = 'none'; // Nasconde il messaggio di errore all'inizio
     console.log(role);
     try {
-        const response = await fetch('http://localhost:3000/login', {
+        const res = await fetch('http://localhost:3000/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -29,8 +29,8 @@ async function login () { // Funzione per gestire il login
             credentials: 'include', // Includi le credenziali per la sessione
             body: JSON.stringify({ identifier: identifier, email: email, role: role }) // Invia il codice fiscale, l'email e il ruolo al server
         });
-        const data = await response.json();
-        if (response.ok) {
+        const data = await res.json();
+        if (res.ok) {
             window.location.href = data.redirect; // Reindirizza alla pagina home se il login ha successo
         } else {
             error_message.textContent = data.error; // Mostra il messaggio di errore
@@ -54,5 +54,37 @@ async function checkAccess(expectedRole) { // Funzione per verificare se l'utent
         }
     } catch (err) {
         window.location.href = 'index.html';
+    }
+}
+
+async function showUserInfo() {
+    try {
+        const res = await fetch('http://localhost:3000/user/info', {
+            credentials: 'include'
+        });
+        const data = await res.json();
+        if (res.ok) {
+            document.getElementById('user-info').textContent = `Ciao, ${data.name}`; // Mostra il nome dell'utente
+        } else {
+            document.getElementById('user-info').textContent = 'Errore nel recupero del nome utente';
+        }
+    } catch (error) {
+        document.getElementById('user-info').textContent = 'Errore nel recupero del nome utente';
+    }
+}
+
+async function logout() {
+    try {
+        const res = await fetch('http://localhost:3000/logout', {
+            method: 'POST',
+            credentials: 'include' // Includi le credenziali per la sessione
+        });
+        if (res.ok) {
+            window.location.href = 'index.html'; // Reindirizza alla pagina di login dopo il logout
+        } else {
+            console.error('Errore durante il logout');
+        }
+    } catch (error) {
+        console.error('Errore nel logout:', error);
     }
 }
