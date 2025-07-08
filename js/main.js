@@ -19,13 +19,14 @@ async function login () { // Funzione per gestire il login
             email = role === 'cliente' ? document.getElementById('email').value.trim() : '', // Recupera l'email inserita solo se il ruolo è cliente
             error_message = document.getElementById('error_message'); // Recupera l'elemento per il messaggio di errore
     error_message.style.display = 'none'; // Nasconde il messaggio di errore all'inizio
+    console.log(role);
     try {
         const response = await fetch('http://localhost:3000/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            // credentials: 'include', // Includi le credenziali per la sessione
+            credentials: 'include', // Includi le credenziali per la sessione
             body: JSON.stringify({ identifier: identifier, email: email, role: role }) // Invia il codice fiscale, l'email e il ruolo al server
         });
         const data = await response.json();
@@ -41,3 +42,17 @@ async function login () { // Funzione per gestire il login
         error_message.style.display = 'block';
     }
 };
+
+async function checkAccess(expectedRole) { // Funzione per verificare se l'utente è loggato e ha il ruolo corretto
+    try {
+        const res = await fetch('http://localhost:3000/check/logged', {
+            credentials: 'include'
+        });
+        const data = await res.json();
+        if (!res.ok || data.role !== expectedRole) { // Se la risposta non è ok o il ruolo non corrisponde a quello atteso
+            window.location.href = 'index.html'; // Reindirizza alla pagina di login
+        }
+    } catch (err) {
+        window.location.href = 'index.html';
+    }
+}
