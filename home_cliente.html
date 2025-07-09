@@ -11,7 +11,7 @@
         <h1>📚 Biblioteca Comunale</h1>
         <nav>
             <ul>
-                <li><a href="#">Libri Disponibili</a></li>
+                <li><a href="#" onclick="showAvailableBooks()">Libri Disponibili</a></li>
                 <li><a href="#">I miei prestiti</a></li>
                 <li><a href="#">Storico</a></li>
                 <li><a href="#" onclick="logout()">Logout</a></li>
@@ -20,8 +20,12 @@
     </header>
     <main class="main-content">
         <section class="welcome-box">
-        <h2 id="user-info"></h2>
-        <p>Benvenuto nella tua area personale della biblioteca</p>
+            <h2 id="user-info"></h2>
+            <p>Benvenuto nella tua area personale della biblioteca</p>
+        </section>
+        <section id="books-section" style="display: none;">
+            <h3>Libri Disponibili</h3>
+            <div id="books-list"></div>
         </section>
     </main>
     <script src="js/main.js"></script>

@@ -51,9 +51,9 @@ app.post('/login', (req, res) => { // Funzione per gestire il login
         query = 'SELECT * FROM CLIENTE WHERE CODICE_FISCALE_CLIENTE = ? AND EMAIL_CLIENTE = ?';
         params = [identifier, email];
     }
-    db.query(query, params, (error, results) => { // Query da eseguire
-        if (error) { // Gestione degli errori durante la query
-            console.error('Errore durante la query:', error);
+    db.query(query, params, (err, results) => { // Query da eseguire
+        if (err) { // Gestione degli errori durante la query
+            console.error('Errore durante la query:', err);
             return res.status(500).json({ error: 'Errore del server' });
         }
         if (results.length > 0) { // Se la query ha restituito risultati, significa che le credenziali sono corrette
@@ -88,13 +88,28 @@ app.get('/user/info', (req, res) => { // Route per ottenere le informazioni dell
     } else if (role === 'bibliotecario') { // Se il ruolo è bibliotecario
         query = 'SELECT NOME_BIBLIOTECARIO AS NOME FROM BIBLIOTECARIO WHERE NUMERO_MATRICOLA = ?';
     }
-    db.query(query, [identifier], (error, results) => { // Esegue la query per ottenere il nome dell'utente
-        if (error || results.length === 0) { // Gestione degli errori durante la query o se non ci sono risultati
+    db.query(query, [identifier], (err, results) => { // Esegue la query per ottenere il nome dell'utente
+        if (err || results.length === 0) { // Gestione degli errori durante la query o se non ci sono risultati
             return res.status(500).json({ error: 'Errore nel recupero del nome utente' });
         }
         const name = results[0].NOME; // Recupera il nome dell'utente
         res.status(200).json({ name: name }); // Risponde con il nome dell'utente
     })
+});
+
+app.get('/get/books', (req, res) => { // Route per ottenere la lista dei libri
+    if (!req.session.loggedIn || req.session.role !== 'cliente') { // Controlla se l'utente è loggato e se il ruolo è cliente
+        return res.status(401).json({ error: 'Non autorizzato' });
+    }
+    const query = 'SELECT * FROM LIBRO'; // Query per ottenere tutti i libri
+    db.query(query, (err, results) => { // Esegue la query per ottenere i libri
+        if (err) {
+            console.error('Errore durante la query dei libri:', err);
+            return res.status(500).json({ error: 'Errore durante il recupero dei libri' });
+        }
+        console.log('Libri recuperati:', results); // Log dei libri recuperati
+        res.status(200).json({ books: results }); // Risponde con la lista dei libri
+    });
 });
 
 app.post('/logout', (req, res) => { // Route per gestire il logout

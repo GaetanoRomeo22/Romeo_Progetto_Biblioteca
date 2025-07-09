@@ -55,7 +55,7 @@ async function checkAccess(expectedRole) { // Funzione per verificare se l'utent
     } catch (err) {
         window.location.href = 'index.html';
     }
-}
+};
 
 async function showUserInfo() {
     try {
@@ -71,7 +71,47 @@ async function showUserInfo() {
     } catch (error) {
         document.getElementById('user-info').textContent = 'Errore nel recupero del nome utente';
     }
-}
+};
+
+async function showAvailableBooks() {
+    try {
+        const res = await fetch('http://localhost:3000/get/books', {
+            credentials: 'include'
+        });
+        const data = await res.json();
+        console.log('Libri disponibili:', data); // Log dei libri disponibili
+        const booksList = document.getElementById('books-list');
+        booksList.innerHTML = ''; // Pulisce la lista dei libri
+        if (data.books.length === 0) {
+            booksList.innerHTML = '<p>Nessun libro disponibile al momento.</p>'; // Mostra un messaggio se non ci sono libri
+            return;
+        }
+        const table = document.createElement('table');
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>ISBN</th>
+                    <th>Titolo</th>
+                    <th>Anno</th>
+                    <th>Genere</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.books.map(book => `
+                    <tr>
+                        <td>${book.ISBN}</td>
+                        <td>${book.TITOLO}</td>
+                        <td>${book.ANNO_PUBBLICAZIONE}</td>
+                        <td>${book.GENERE}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        `;
+        booksList.appendChild(table);
+    } catch (err) {
+        console.error('Errore:', err);
+    }
+};
 
 async function logout() {
     try {
@@ -87,4 +127,4 @@ async function logout() {
     } catch (error) {
         console.error('Errore nel logout:', error);
     }
-}
+};
