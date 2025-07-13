@@ -79,8 +79,8 @@ async function showAvailableBooks() {
             credentials: 'include'
         });
         const data = await res.json();
-        console.log('Libri disponibili:', data); // Log dei libri disponibili
         const booksList = document.getElementById('books-list');
+        const booksSection = document.getElementById('books-section');
         booksList.innerHTML = ''; // Pulisce la lista dei libri
         if (data.books.length === 0) {
             booksList.innerHTML = '<p>Nessun libro disponibile al momento.</p>'; // Mostra un messaggio se non ci sono libri
@@ -108,8 +108,128 @@ async function showAvailableBooks() {
             </tbody>
         `;
         booksList.appendChild(table);
+        booksSection.style.display = 'block';
     } catch (err) {
         console.error('Errore:', err);
+    }
+};
+
+async function showLoans() {
+    try {
+        const res = await fetch('http://localhost:3000/get/loans', {
+            credentials: 'include'
+        });
+        const data = await res.json();
+        const loansList = document.getElementById('loans-list');
+        const loansSection = document.getElementById('loans-section');
+        loansList.innerHTML = '';
+        if (!data.prestiti || data.prestiti.length === 0) {
+            container.textContent = 'Nessun prestito trovato.';
+            return;
+        }
+        const table = document.createElement('table');
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>ISBN</th>
+                    <th>Titolo</th>
+                    <th>Numero copia</th>
+                    <th>Inizio prestito</th>
+                    <th>Scadenza prestito</th>
+                    <th>Data restituzione</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.prestiti.map(p => `
+                    <tr>
+                        <td>${p.ISBN}</td>
+                        <td>${p.TITOLO}</td>
+                        <td>${p.NUMERO_COPIA}</td>
+                        <td>${new Date(p.DATA_INIZIO_PRESTITO).toLocaleDateString()}</td>
+                        <td>${new Date(p.DATA_SCADENZA_PRESTITO).toLocaleDateString()}</td>
+                        <td>${p.DATA_RESTITUZIONE ? new Date(p.DATA_RESTITUZIONE).toLocaleDateString() : '-'}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        `;
+        loansList.appendChild(table);
+        loansSection.style.display = 'block'; // Mostra la sezione dei prestiti
+    } catch (err) {
+        console.error('Errore nel recupero dello storico prestiti:', err);
+    }
+};
+
+async function showCardDetails() { // Funzione per mostrare i dettagli della carta dell'utente
+    document.getElementById('books-section').style.display = 'none';
+    document.getElementById('card-section').style.display = 'block';
+    checkCardStatus();
+};
+
+async function checkCardStatus() { // Funzione per controllare lo stato della carta dell'utente
+    try {
+        const res = await fetch('http://localhost:3000/card/status', {
+            credentials: 'include'
+        });
+        const data = await res.json(); // Recupera lo stato della carta
+        const statusDiv = document.getElementById('card-status');
+        const requestBtn = document.getElementById('request-card-btn');
+        const renewBtn = document.getElementById('renew-card-btn');
+        requestBtn.style.display = 'none'; // Nasconde il pulsante di richiesta carta
+        renewBtn.style.display = 'none'; // Nasconde il pulsante di rinnovo carta
+        let dataScadenzaFormattata = '';
+        if (data.scadenza) {
+            const dataScadenza = new Date(data.scadenza);
+            dataScadenzaFormattata = dataScadenza.toLocaleDateString('it-IT', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+        if (data.status === 'mancante') { // Se l'utente non ha una carta
+            statusDiv.textContent = 'Non hai ancora una tessera.';
+            requestBtn.style.display = 'inline-block';
+        } else if (data.status === 'valida') { // Se la carta è valida
+            statusDiv.textContent = `Tessera valida. Scadenza: ${dataScadenzaFormattata}`;
+        } else if (data.status === 'scaduta') { // Se la carta è scaduta
+            statusDiv.textContent = `Tessera scaduta. Scadenza: ${dataScadenzaFormattata}`;
+            renewBtn.style.display = 'inline-block';
+        }
+    } catch (err) {
+        console.error('Errore nel recupero dello stato della tessera:', err);
+    }
+};
+
+async function requestCard() {
+    try {
+        const res = await fetch('http://localhost:3000/request/card', {
+            method: 'POST',
+            credentials: 'include'
+        });
+        if (res.ok) {
+            const data = await res.json();
+            checkCardStatus(); // Aggiorna lo stato della carta dopo la richiesta
+        } else {
+            console.error('Errore durante la richiesta della tessera');
+        }
+    } catch (err) {
+        console.error('Errore nella richiesta della carta:', err);
+    }
+};
+
+async function renewCard() {
+    try {
+        const res = await fetch('http://localhost:3000/renew/card', {
+            method: 'POST',
+            credentials: 'include'
+        });
+        if (res.ok) {
+            const data = await res.json();
+            checkCardStatus(); // Aggiorna lo stato della carta dopo la richiesta
+        } else {
+            console.error('Errore durante la richiesta della tessera');
+        }
+    } catch (err) {
+        console.error('Errore nella richiesta della carta:', err);
     }
 };
 

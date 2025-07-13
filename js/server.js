@@ -107,8 +107,117 @@ app.get('/get/books', (req, res) => { // Route per ottenere la lista dei libri
             console.error('Errore durante la query dei libri:', err);
             return res.status(500).json({ error: 'Errore durante il recupero dei libri' });
         }
-        console.log('Libri recuperati:', results); // Log dei libri recuperati
         res.status(200).json({ books: results }); // Risponde con la lista dei libri
+    });
+});
+
+app.get('/get/loans', (req, res) => { // Route per ottenere i prestiti dell'utente
+    if (!req.session.loggedIn || req.session.role !== 'cliente') {
+        return res.status(401).json({ error: 'Non autorizzato' });
+    }
+    const tesseraQuery = 'SELECT NUMERO_TESSERA FROM REGISTRAZIONE WHERE CODICE_FISCALE_CLIENTE = ?';
+    db.query(tesseraQuery, [req.session.identifier], (err, results) => {
+        if (err) { // Gestione degli errori durante la query
+            return res.status(500).json({ error: 'Errore server' });
+        }
+        if (results.length === 0) { // Se non ci sono tessere associate al cliente
+            return res.status(404).json({ error: 'Nessuna tessera trovata' });
+        }
+        const numeroTessera = results[0].NUMERO_TESSERA;
+        const prestitiQuery = `
+            SELECT P.ISBN, L.TITOLO, P.NUMERO_COPIA, P.DATA_INIZIO_PRESTITO, P.DATA_SCADENZA_PRESTITO, P.DATA_RESTITUZIONE
+            FROM PRENDE P
+            JOIN LIBRO L ON P.ISBN = L.ISBN
+            WHERE P.NUMERO_TESSERA = ?
+            ORDER BY P.DATA_INIZIO_PRESTITO DESC
+        `;
+        db.query(prestitiQuery, [numeroTessera], (err, prestiti) => {
+            if (err) return res.status(500).json({ error: 'Errore nel recupero dei prestiti' });
+            res.json({ prestiti });
+        });
+    });
+});
+
+app.get('/card/status', (req, res) => { // Route per ottenere lo stato della carta dell'utente
+    if (!req.session.loggedIn || req.session.role !== 'cliente') { // Controlla se l'utente è loggato e se il ruolo è cliente
+        return res.status(401).json({ error: 'Non autorizzato' });
+    }
+    const query = 'SELECT * FROM REGISTRAZIONE WHERE CODICE_FISCALE_CLIENTE = ?'; // Query per ottenere lo stato della carta
+    db.query(query, [req.session.identifier], (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: 'Errore durante la richiesta della carta' });
+        }
+        if (results.length === 0) { // Se non ci sono risultati, significa che l'utente non ha una carta
+            return res.status(200).json({ status: 'mancante' });
+        }
+        const dataScadenza = new Date(results[0].DATA_SCADENZA_TESSERA);
+        const oggi = new Date();
+        if (dataScadenza < oggi) { // Se la data di scadenza è passata
+            return res.status(200).json({
+                status: 'scaduta',
+                numeroTessera: results[0].NUMERO_TESSERA,
+                scadenza: results[0].DATA_SCADENZA_TESSERA
+            });
+        }
+        return res.status(200).json({ // Se la carta è ancora valida
+            status: 'valida',
+            numeroTessera: results[0].NUMERO_TESSERA,
+            scadenza: results[0].DATA_SCADENZA_TESSERA
+        });
+    });
+});
+
+app.post('/request/card', (req, res) => { // Route per richiedere la carta
+    if (!req.session.loggedIn || req.session.role !== 'cliente') { // Controlla se l'utente è loggato e se il ruolo è cliente
+        return res.status(401).json({ error: 'Non autorizzato' });
+    }
+    const checkQuery = 'SELECT * FROM REGISTRAZIONE WHERE CODICE_FISCALE_CLIENTE = ?'; // Query per verificare se l'utente ha già richiesto la carta
+    db.query(checkQuery, [req.session.identifier], (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: 'Errore durante la richiesta della carta' });
+        }
+        if (results.length > 0) {
+            return res.status(200).json({ error: 'Tessera già richiesta'});
+        }
+        const numeroTessera = Math.floor(10000000 + Math.random() * 90000000).toString();
+        const oggi = new Date();
+        const dataRegistrazione = oggi.toISOString().split('T')[0];
+        const dataScadenza = new Date(oggi);
+        dataScadenza.setFullYear(dataScadenza.getFullYear() + 1);
+        const dataScadenzaFormatted = dataScadenza.toISOString().split('T')[0];
+        const insertQuery = 'INSERT INTO REGISTRAZIONE (NUMERO_TESSERA, DATA_REGISTRAZIONE, DATA_SCADENZA_TESSERA, CODICE_FISCALE_CLIENTE) VALUES (?, ?, ?, ?)';
+        db.query(insertQuery, [numeroTessera, dataRegistrazione, dataScadenzaFormatted, req.session.identifier], (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Errore durante la registrazione della carta' });
+            }
+            res.status(200).json({ message: 'Carta richiesta con successo', numeroTessera: numeroTessera });
+        });
+    });
+});
+
+app.post('/renew/card', (req, res) => { // Route per rinnovare la carta
+    if (!req.session.loggedIn || req.session.role !== 'cliente') { // Controlla se l'utente è loggato e se il ruolo è cliente
+        return res.status(401).json({ error: 'Non autorizzato' });
+    }
+    const checkQuery = 'SELECT * FROM REGISTRAZIONE WHERE CODICE_FISCALE_CLIENTE = ?'; // Query per verificare se l'utente ha già richiesto la carta
+    db.query(checkQuery, [req.session.identifier], (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: 'Errore durante la richiesta della carta' });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Tessera non presente'});
+        }
+        const oggi = new Date();
+        const dataScadenza = new Date(oggi);
+        dataScadenza.setFullYear(dataScadenza.getFullYear() + 1);
+        const dataScadenzaFormatted = dataScadenza.toISOString().split('T')[0];
+        const updateQuery = 'UPDATE REGISTRAZIONE SET DATA_SCADENZA_TESSERA = ? WHERE CODICE_FISCALE_CLIENTE = ?';
+        db.query(updateQuery, [dataScadenzaFormatted, req.session.identifier], (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Errore durante la registrazione della carta' });
+            }
+            res.status(200).json({ message: 'Carta rinnovata con successo' });
+        });
     });
 });
 

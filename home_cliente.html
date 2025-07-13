@@ -11,10 +11,11 @@
         <h1>📚 Biblioteca Comunale</h1>
         <nav>
             <ul>
-                <li><a href="#" onclick="showAvailableBooks()">Libri Disponibili</a></li>
-                <li><a href="#">I miei prestiti</a></li>
-                <li><a href="#">Storico</a></li>
-                <li><a href="#" onclick="logout()">Logout</a></li>
+                <li><a onclick="showAvailableBooks()">Libri Disponibili</a></li>
+                <li><a onclick="showCardDetails()">Gestione Tessera</a></li>
+                <li><a onclick="showLoans()">I miei prestiti</a></li>
+                <li><a >Eventi</a></li>
+                <li><a onclick="logout()">Logout</a></li>
             </ul>
         </nav>
     </header>
@@ -27,7 +28,20 @@
             <h3>Libri Disponibili</h3>
             <div id="books-list"></div>
         </section>
+        <section id="card-section" style="display: none;">
+            <h3>Gestione Tessera</h3>
+            <div id="card-status"></div>
+            <button id="request-card-btn" style="display:none;" onclick="requestCard()">Richiedi Tessera</button>
+            <button id="renew-card-btn" style="display:none;" onclick="renewCard()">Rinnova Tessera</button>
+        </section>
+        <section id="loans-section" style="display:none;">
+            <h3>Storico Prestiti</h3>
+            <div id="loans-list"></div>
+        </section>
     </main>
+    <footer class="footer">
+        📍 Biblioteca Comunale di Ponticelli Grazia Deledda - © 2025
+    </footer>
     <script src="js/main.js"></script>
     <script>
         window.addEventListener('DOMContentLoaded', async () => {
